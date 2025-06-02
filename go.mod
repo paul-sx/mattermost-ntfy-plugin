@@ -2,14 +2,12 @@ module github.com/paul-sx/mattermost-ntfy-plugin
 
 go 1.24.3
 
-<<<<<<< HEAD
-require github.com/mattermost/mattermost/server/public v0.1.13
-=======
+
 require (
 	github.com/mattermost/mattermost/server/public v0.1.13
 	github.com/pkg/errors v0.9.1
 )
->>>>>>> d1000e0 (Update)
+
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -41,13 +39,8 @@ require (
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
-<<<<<<< HEAD
-	github.com/pkg/errors v0.9.1 // indirect
-	github.com/russellhaering/goxmldsig v1.2.0 // indirect
-=======
 	github.com/russellhaering/goxmldsig v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
->>>>>>> d1000e0 (Update)
 	github.com/tinylib/msgp v1.2.5 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
