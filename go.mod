@@ -2,12 +2,10 @@ module github.com/paul-sx/mattermost-ntfy-plugin
 
 go 1.24.3
 
-
 require (
 	github.com/mattermost/mattermost/server/public v0.1.13
 	github.com/pkg/errors v0.9.1
 )
-
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
