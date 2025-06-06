@@ -1,24 +1,19 @@
 package main
 
 import (
-<<<<<<< HEAD
-=======
 	"encoding/json"
 	"sync"
 
 	"github.com/mattermost/mattermost/server/public/model"
->>>>>>> d1000e0 (Update)
+
 	"github.com/mattermost/mattermost/server/public/plugin"
 )
 
 type NtfyPlugin struct {
 	plugin.MattermostPlugin
-<<<<<<< HEAD
-=======
 
 	configurationLock sync.RWMutex
 	configuration     *Configuration
->>>>>>> d1000e0 (Update)
 }
 
 func (p *NtfyPlugin) OnActivate() error {
@@ -28,8 +23,6 @@ func (p *NtfyPlugin) OnActivate() error {
 func (p *NtfyPlugin) OnDeactivate() error {
 	return nil
 }
-<<<<<<< HEAD
-=======
 
 type SubscriptionDetails struct {
 	Active bool `json:"active"`
@@ -66,4 +59,3 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 
 	}
 }
->>>>>>> d1000e0 (Update)

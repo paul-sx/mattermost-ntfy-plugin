@@ -1,9 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
-	"encoding/json"
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/pluginapi"
@@ -72,6 +72,7 @@ func (c *Handler) executeNtfyCommand(args *model.CommandArgs, p *NtfyPlugin) *mo
 		subscription = &SubscriptionDetails{
 			Active: false,
 		}
+	}
 	subscriptionJSON, err := json.Marshal(subscription)
 	if err != nil {
 		return &model.CommandResponse{
@@ -79,26 +80,26 @@ func (c *Handler) executeNtfyCommand(args *model.CommandArgs, p *NtfyPlugin) *mo
 			Text:         "Failed to serialize subscription details.",
 		}
 	}
-	preferences := &model.Preference{
-		UserId:    userid,
-		Category:  "ntfy_subscribed",
-		Name:      channelid,
-		Value:     string(subscriptionJSON),
+	preferences := model.Preference{
+		UserId:   userid,
+		Category: "ntfy_subscribed",
+		Name:     channelid,
+		Value:    string(subscriptionJSON),
 	}
 
-	err := p.API.UpdatePreferencesForUser(userid, []*model.Preference{preferences})
-	if err != nil {
+	err2 := p.API.UpdatePreferencesForUser(userid, []model.Preference{preferences})
+	if err2 != nil {
 		return &model.CommandResponse{
 			ResponseType: model.CommandResponseTypeEphemeral,
 			Text:         "Failed to update user preferences.",
 		}
 	}
-	
-	responseText := fmt.Sprintf("Ntfy notifications have been turned %s for channel %s.", fields[1], args.ChannelName)
+
+	responseText := fmt.Sprintf("Ntfy notifications have been turned %s for channel %s.", fields[1], args.ChannelId)
 	return &model.CommandResponse{
 		ResponseType: model.CommandResponseTypeEphemeral,
 		Text:         responseText,
 		Username:     "Ntfy Plugin",
-		ChannelId: channelid,
+		ChannelId:    channelid,
 	}
 }
