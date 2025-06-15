@@ -49,6 +49,12 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 		return
 	}
 
+	channel, err_c := p.API.GetChannel(post.ChannelId)
+	if err_c != nil {
+		p.API.LogError("Failed to get channel", "channel_id", post.ChannelId, "error", err_c.Error())
+		return
+	}
+
 	for _, user := range subscribers {
 		if user.Id == post.UserId {
 			// Skip the user who posted the message
@@ -69,11 +75,7 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			if len(notification) > 50 {
 				notification = notification[:50]
 			}
-			payload := map[string]string{
-				"title":   "New Mattermost Message",
-				"message": notification,
-			}
-			payloadBytes, _ := json.Marshal(payload)
+
 			// Example topic: "mattermost-" + post.ChannelId + "-" + userID
 			topic := configuration.Topic
 			url := configuration.ServerURL + "/" + topic
@@ -83,7 +85,7 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			password := configuration.Password
 			auth := username + ":" + password
 
-			req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
+			req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(notification)))
 			if err != nil {
 				p.API.LogError("Failed to create ntfy.sh request", "error", err.Error())
 				return
@@ -92,6 +94,7 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 
 			encoded := base64.StdEncoding.EncodeToString([]byte(auth))
 			req.Header.Set("Authorization", "Basic "+encoded)
+			req.Header.Set("Title", "Mattermost Message by "+user.Nickname+" on "+channel.Name)
 
 			client := &http.Client{}
 			_, err2 := client.Do(req)
