@@ -24,10 +24,11 @@ func NewCommandHandler(client *pluginapi.Client) Command {
 	err := client.SlashCommand.Register(&model.Command{
 		Trigger:          ntfyCommandTrigger,
 		DisplayName:      "Ntfy",
-		Description:      "Send notifications to ntfy.sh",
+		Description:      "Turn ntfy notifications on or off for a channel",
 		AutoComplete:     true,
-		AutoCompleteDesc: "Send a notification to ntfy.sh",
-		AutoCompleteHint: "[message]",
+		AutoCompleteDesc: "Turn ntfy notifications on or off for a channel",
+		AutoCompleteHint: "on|off",
+		IconURL:          "https://ntfy.sh/favicon.ico",
 	})
 	if err != nil {
 		client.Log.Error("Failed to register slash command", "error", err)
