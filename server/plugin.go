@@ -62,6 +62,12 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 		return
 	}
 
+	post_user, err_u := p.API.GetUser(post.UserId)
+	if err_u != nil {
+		p.API.LogError("Failed to get post user", "user_id", post.UserId, "error", err_u.Error())
+		return
+	}
+
 	for _, user := range subscribers {
 		if user.Id == post.UserId {
 			if post.GetProp("from_webhook") != "true" {
@@ -71,7 +77,7 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 		}
 		pref, err := p.API.GetPreferenceForUser(user.Id, "ntfy_subscribed", post.ChannelId)
 		if err != nil {
-			p.API.LogError("Failed to get user preference", "user_id", user.Id, "error", err.Error())
+			//p.API.LogError("Failed to get user preference", "user_id", user.Id, "error", err.Error())
 			continue
 		}
 		var details SubscriptionDetails
@@ -94,7 +100,6 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			}
 			url := configuration.ServerURL + "/" + topic
 
-			// Replace these with your actual username and password variables
 			username := configuration.Username
 			password := configuration.Password
 			auth := username + ":" + password
@@ -108,11 +113,11 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 
 			encoded := base64.StdEncoding.EncodeToString([]byte(auth))
 			req.Header.Set("Authorization", "Basic "+encoded)
-			req.Header.Set("X-Title", "Message by "+user.Username+" on "+channel.Name)
+			req.Header.Set("X-Title", "Message by "+post_user.Username+" on "+channel.Name)
 			siteURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/" + team.Name + "/channels/" + channel.Name
 
 			req.Header.Set("X-Actions", "view, Open Channel, "+siteURL+", clear=true")
-			req.Header.Set("X-Icon", "https://ntfy.sh/static/images/favicon.ico")
+			req.Header.Set("X-Icon", *p.API.GetConfig().ServiceSettings.SiteURL+"/static/icon_144x144.png")
 
 			client := &http.Client{}
 			_, err2 := client.Do(req)
