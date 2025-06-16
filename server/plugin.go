@@ -64,8 +64,10 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 
 	for _, user := range subscribers {
 		if user.Id == post.UserId {
-			// Skip the user who posted the message
-			continue
+			if post.GetProp("from_webhook") != "true" {
+				// Skip the user who posted the message
+				continue
+			}
 		}
 		pref, err := p.API.GetPreferenceForUser(user.Id, "ntfy_subscribed", post.ChannelId)
 		if err != nil {
