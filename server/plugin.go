@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"bytes"
@@ -68,6 +69,13 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 		return
 	}
 
+	// Build the siteURL and replace http(s) with mattermost://
+	siteURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/" + team.Name + "/channels/" + channel.Name
+	siteURL = strings.Replace(siteURL, "https://", "mattermost://", 1)
+	siteURL = strings.Replace(siteURL, "http://", "mattermost://", 1)
+
+	iconURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/static/icon_144x144.png"
+
 	for _, user := range subscribers {
 		if user.Id == post.UserId {
 			if post.GetProp("from_webhook") != "true" {
@@ -113,11 +121,10 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 
 			encoded := base64.StdEncoding.EncodeToString([]byte(auth))
 			req.Header.Set("Authorization", "Basic "+encoded)
-			req.Header.Set("X-Title", "Message by "+post_user.Username+" on "+channel.Name)
-			siteURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/" + team.Name + "/channels/" + channel.Name
+			req.Header.Set("X-Title", strings.ToUpper(post_user.Username[:1])+post_user.Username[1:]+" on "+channel.Name)
 
 			req.Header.Set("X-Actions", "view, Open Channel, "+siteURL+", clear=true")
-			req.Header.Set("X-Icon", *p.API.GetConfig().ServiceSettings.SiteURL+"/static/icon_144x144.png")
+			req.Header.Set("X-Icon", iconURL)
 
 			client := &http.Client{}
 			_, err2 := client.Do(req)
