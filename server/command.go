@@ -24,11 +24,11 @@ func NewCommandHandler(client *pluginapi.Client) Command {
 	err := client.SlashCommand.Register(&model.Command{
 		Trigger:          ntfyCommandTrigger,
 		DisplayName:      "Ntfy",
-		Description:      "Turn ntfy notifications on or off for a channel",
+		Description:      "Turn ntfy notifications on or off for a channel or set the topic",
 		AutoComplete:     true,
-		AutoCompleteDesc: "Turn ntfy notifications on or off for a channel",
-		AutoCompleteHint: "on|off",
-		IconURL:          "https://ntfy.sh/favicon.ico",
+		AutoCompleteDesc: "Turn ntfy notifications on or off for a channel or set the topic",
+		AutoCompleteHint: "on|off|topic [topic]",
+		IconURL:          "https://ntfy.sh/static/images/favicon.ico",
 	})
 	if err != nil {
 		client.Log.Error("Failed to register slash command", "error", err)
@@ -54,28 +54,57 @@ func (c *Handler) Handle(args *model.CommandArgs, p *NtfyPlugin) (*model.Command
 }
 
 func (c *Handler) executeNtfyCommand(args *model.CommandArgs, p *NtfyPlugin) *model.CommandResponse {
+
+	var subscription *SubscriptionDetails
+	subscription_preference, err := p.API.GetPreferenceForUser(args.UserId, "ntfy_subscribed", args.ChannelId)
+	if err != nil {
+		subscription = &SubscriptionDetails{
+			Active: false,
+			Topic:  "",
+		}
+	} else {
+
+		if unmarshalErr := json.Unmarshal([]byte(subscription_preference.Value), &subscription); unmarshalErr != nil {
+			subscription = &SubscriptionDetails{
+				Active: false,
+				Topic:  "",
+			}
+		}
+	}
+
 	fields := strings.Fields(args.Command)
-	if len(fields) != 2 || (strings.ToLower(fields[1]) != "on" && strings.ToLower(fields[1]) != "off") {
+	if len(fields) == 2 && (strings.ToLower(fields[1]) == "on" || strings.ToLower(fields[1]) == "off") {
+		// on or off command
+		if strings.ToLower(fields[1]) == "on" {
+			// Turn on notifications
+			subscription.Active = true
+		} else {
+			// Turn off notifications
+			subscription.Active = false
+		}
+	} else if len(fields) == 2 && strings.ToLower(fields[1]) == "topic" {
+		subscription.Topic = ""
+	} else if len(fields) == 3 && strings.ToLower(fields[1]) == "topic" {
+		// topic command
+		sanitizedTopic := ""
+		for _, r := range fields[2] {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' {
+				sanitizedTopic += string(r)
+			}
+		}
+		subscription.Topic = sanitizedTopic
+	} else {
 		return &model.CommandResponse{
 			ResponseType: model.CommandResponseTypeEphemeral,
-			Text:         "Invalid command format. Use `/ntfy [on|off]`.",
+			Text:         "Invalid command format. Use `/ntfy [on|off|topic [topic]]`.",
 		}
 	}
 
 	userid := args.UserId
 	channelid := args.ChannelId
-	var subscription *SubscriptionDetails
-	if strings.ToLower(fields[1]) == "on" {
-		subscription = &SubscriptionDetails{
-			Active: true,
-		}
-	} else {
-		subscription = &SubscriptionDetails{
-			Active: false,
-		}
-	}
-	subscriptionJSON, err := json.Marshal(subscription)
-	if err != nil {
+
+	subscriptionJSON, err_s := json.Marshal(subscription)
+	if err_s != nil {
 		return &model.CommandResponse{
 			ResponseType: model.CommandResponseTypeEphemeral,
 			Text:         "Failed to serialize subscription details.",
@@ -96,7 +125,19 @@ func (c *Handler) executeNtfyCommand(args *model.CommandArgs, p *NtfyPlugin) *mo
 		}
 	}
 
-	responseText := fmt.Sprintf("Ntfy notifications have been turned %s for channel %s.", fields[1], args.ChannelId)
+	responseText := "Ntfy notifications have been turned "
+	if subscription.Active {
+		responseText += "on "
+	} else {
+		responseText += "off "
+	}
+	if subscription.Topic != "" {
+		responseText += fmt.Sprintf("with topic '%s' ", subscription.Topic)
+	} else {
+		responseText += "with the default topic "
+	}
+	responseText += "for this channel."
+
 	return &model.CommandResponse{
 		ResponseType: model.CommandResponseTypeEphemeral,
 		Text:         responseText,

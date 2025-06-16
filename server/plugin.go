@@ -32,7 +32,8 @@ func (p *NtfyPlugin) OnDeactivate() error {
 }
 
 type SubscriptionDetails struct {
-	Active bool `json:"active"`
+	Active bool   `json:"active"`
+	Topic  string `json:"topic"`
 }
 
 // MessageHasBeenPosted is called when a message has been posted in a channel.
@@ -52,6 +53,12 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 	channel, err_c := p.API.GetChannel(post.ChannelId)
 	if err_c != nil {
 		p.API.LogError("Failed to get channel", "channel_id", post.ChannelId, "error", err_c.Error())
+		return
+	}
+
+	team, err_t := p.API.GetTeam(channel.TeamId)
+	if err_t != nil {
+		p.API.LogError("Failed to get team", "team_id", channel.TeamId, "error", err_t.Error())
 		return
 	}
 
@@ -77,7 +84,12 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			}
 
 			// Example topic: "mattermost-" + post.ChannelId + "-" + userID
-			topic := configuration.Topic
+			var topic string
+			if details.Topic != "" {
+				topic = details.Topic
+			} else {
+				topic = configuration.Topic
+			}
 			url := configuration.ServerURL + "/" + topic
 
 			// Replace these with your actual username and password variables
@@ -90,11 +102,15 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 				p.API.LogError("Failed to create ntfy.sh request", "error", err.Error())
 				return
 			}
-			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Content-Type", "text/markdown")
 
 			encoded := base64.StdEncoding.EncodeToString([]byte(auth))
 			req.Header.Set("Authorization", "Basic "+encoded)
-			req.Header.Set("Title", "Mattermost Message by "+user.Nickname+" on "+channel.Name)
+			req.Header.Set("X-Title", "Message by "+user.Username+" on "+channel.Name)
+			siteURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/" + team.Name + "/channels/" + channel.Name
+
+			req.Header.Set("X-Actions", "view, Open Channel, "+siteURL+", clear=true")
+			req.Header.Set("X-Icon", "https://ntfy.sh/static/images/favicon.ico")
 
 			client := &http.Client{}
 			_, err2 := client.Do(req)
