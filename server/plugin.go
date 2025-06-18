@@ -74,6 +74,10 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 	siteURL = strings.Replace(siteURL, "https://", "mattermost://", 1)
 	siteURL = strings.Replace(siteURL, "http://", "mattermost://", 1)
 
+	postURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/" + team.Name + "/pl/" + post.Id
+	postURL = strings.Replace(postURL, "https://", "mattermost://", 1)
+	postURL = strings.Replace(postURL, "http://", "mattermost://", 1)
+
 	iconURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/static/icon_144x144.png"
 
 	for _, user := range subscribers {
@@ -122,7 +126,7 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			encoded := base64.StdEncoding.EncodeToString([]byte(auth))
 			req.Header.Set("Authorization", "Basic "+encoded)
 			req.Header.Set("X-Title", strings.ToUpper(post_user.Username[:1])+post_user.Username[1:]+" on "+channel.Name)
-
+			req.Header.Set("X-Click", postURL)
 			req.Header.Set("X-Actions", "view, Open Channel, "+siteURL+", clear=true")
 			req.Header.Set("X-Icon", iconURL)
 

@@ -17,7 +17,7 @@ const manifestStr = `
   "name": "Ntfy Mattermost Server Plugin",
   "description": "A plugin for mattermost server to add notifications via ntfy.",
   "homepage_url": "https://github.com/paul-sx/mattermost-ntfy-plugin",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "min_server_version": "7.0.0",
   "server": {
     "executables": {
