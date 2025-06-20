@@ -80,6 +80,7 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 
 	iconURL := *p.API.GetConfig().ServiceSettings.SiteURL + "/static/icon_144x144.png"
 
+	seenTopics := make(map[string]struct{})
 	for _, user := range subscribers {
 		if user.Id == post.UserId {
 			if post.GetProp("from_webhook") != "true" {
@@ -110,6 +111,12 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			} else {
 				topic = configuration.Topic
 			}
+			// Don't send notifications to the same topic multiple times
+			if _, seen := seenTopics[topic]; seen {
+				continue
+			}
+			seenTopics[topic] = struct{}{}
+
 			url := configuration.ServerURL + "/" + topic
 
 			username := configuration.Username
