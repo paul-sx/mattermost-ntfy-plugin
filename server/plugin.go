@@ -111,6 +111,10 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			} else {
 				topic = configuration.Topic
 			}
+			topic = strings.ReplaceAll(topic, "{channel}", channel.Name)
+			topic = strings.ReplaceAll(topic, "{team}", team.Name)
+			topic = strings.ReplaceAll(topic, "{user}", post_user.Username)
+
 			// Don't send notifications to the same topic multiple times
 			if _, seen := seenTopics[topic]; seen {
 				continue
@@ -122,6 +126,9 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			username := configuration.Username
 			password := configuration.Password
 			auth := username + ":" + password
+			if username == "" {
+				auth = ""
+			}
 
 			req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(notification)))
 			if err != nil {
@@ -130,8 +137,11 @@ func (p *NtfyPlugin) MessageHasBeenPosted(c *plugin.Context, post *model.Post) {
 			}
 			req.Header.Set("Content-Type", "text/markdown")
 
-			encoded := base64.StdEncoding.EncodeToString([]byte(auth))
-			req.Header.Set("Authorization", "Basic "+encoded)
+			if auth != "" {
+				// Encode the username and password in base64 for Basic Auth}
+				encoded := base64.StdEncoding.EncodeToString([]byte(auth))
+				req.Header.Set("Authorization", "Basic "+encoded)
+			}
 			req.Header.Set("X-Title", strings.ToUpper(post_user.Username[:1])+post_user.Username[1:]+" on "+channel.Name)
 			req.Header.Set("X-Click", postURL)
 			req.Header.Set("X-Actions", "view, Open Channel, "+siteURL+", clear=true")
